@@ -22,18 +22,18 @@ static const char *colorname[NUMCOLS] = {
 
 #if MESSAGE_PATCH || COLOR_MESSAGE_PATCH
 /* default message */
-static const char * message = "Suckless: Software that sucks less.";
+static const char * message = "You are outside the matrix!";
 
 /* text color */
 static const char * text_color = "#ffffff";
 
 /* text size (must be a valid size) */
-static const char * font_name = "6x10";
+static const char * font_name = "9x15";
 #endif // MESSAGE_PATCH | COLOR_MESSAGE_PATCH
 
 #if BACKGROUND_IMAGE_PATCH
 /* Background image path, should be available to the user above */
-static const char * background_image = "";
+static const char * background_image = "/usr/share/backgrounds/05.jpg";
 #endif // BACKGROUND_IMAGE_PATCH
 
 #if DWM_LOGO_PATCH

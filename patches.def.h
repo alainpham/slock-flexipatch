@@ -40,7 +40,7 @@
 /* This patch introduces an additional color to indicate the state of Caps Lock.
  * https://tools.suckless.org/slock/patches/capscolor/
  */
-#define CAPSCOLOR_PATCH 0
+#define CAPSCOLOR_PATCH 1
 
 /* Based on the message patch this patch lets you add a message to your lock screen using 24 bit
  * color ANSI escape codes.
@@ -56,7 +56,7 @@
  *
  * https://tools.suckless.org/slock/patches/colormessage/
  */
-#define COLOR_MESSAGE_PATCH 0
+#define COLOR_MESSAGE_PATCH 1
 
 /* Adds an additional configuration parameter, controlkeyclear. When set to 1, slock will no
  * longer change to the failure color if a control key is pressed while the buffer is empty.

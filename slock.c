@@ -14,6 +14,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <spawn.h>
 #include <sys/types.h>
 #include <X11/extensions/Xrandr.h>
 #include <X11/keysym.h>
@@ -260,7 +261,7 @@ readpw(Display *dpy, struct xrandr *rr, struct lock **locks, int nscreens,
 			XNextEvent(dpy, &ev);
 		#endif // AUTO_TIMEOUT_PATCH
 		#if QUICKCANCEL_PATCH
-		running = !((time(NULL) - locktime < timetocancel) && (ev.type == MotionNotify));
+		running = !((time(NULL) - locktime < timetocancel) && (ev.type == MotionNotify || ev.type == KeyPress));
 		#endif // QUICKCANCEL_PATCH
 		if (ev.type == KeyPress) {
 			#if AUTO_TIMEOUT_PATCH
@@ -392,16 +393,17 @@ readpw(Display *dpy, struct xrandr *rr, struct lock **locks, int nscreens,
 			#endif // MEDIAKEYS_PATCH
 			default:
 				#if CONTROLCLEAR_PATCH
-				if (controlkeyclear && iscntrl((int)buf[0]))
+				if (controlkeyclear && iscntrl((int)buf[0]) && !num)
 					continue;
-				if (num && (len + num < sizeof(passwd)))
-				#else
+				#endif // CONTROLCLEAR_PATCH
 				if (num && !iscntrl((int)buf[0]) &&
 				    (len + num < sizeof(passwd)))
-				#endif // CONTROLCLEAR_PATCH
 				{
 					memcpy(passwd + len, buf, num);
 					len += num;
+				} else if (buf[0] == '\025') { /* ctrl-u clears input */
+					explicit_bzero(&passwd, sizeof(passwd));
+					len = 0;
 				}
 				#if KEYPRESS_FEEDBACK_PATCH
 				if (blocks_enabled)
@@ -598,7 +600,7 @@ lockscreen(Display *dpy, struct xrandr *rr, int screen)
 			drawlogo(dpy, lock, INIT);
 			#endif // DWM_LOGO_PATCH
 			#if ALPHA_PATCH
-			unsigned int opacity = (unsigned int)(alpha * 0xffffffff);
+			unsigned int opacity = (unsigned int)((double)alpha * 0xffffffff);
 			XChangeProperty(dpy, lock->win, XInternAtom(dpy, "_NET_WM_WINDOW_OPACITY", False), XA_CARDINAL, 32, PropModeReplace, (unsigned char *)&opacity, 1L);
 			XSync(dpy, False);
 			#endif // ALPHA_PATCH
@@ -763,15 +765,12 @@ main(int argc, char **argv) {
 
 	/* run post-lock command */
 	if (argc > 0) {
-		switch (fork()) {
-		case -1:
-			die("slock: fork failed: %s\n", strerror(errno));
-		case 0:
-			if (close(ConnectionNumber(dpy)) < 0)
-				die("slock: close: %s\n", strerror(errno));
-			execvp(argv[0], argv);
-			fprintf(stderr, "slock: execvp %s: %s\n", argv[0], strerror(errno));
-			_exit(1);
+		pid_t pid;
+		extern char **environ;
+		int err = posix_spawnp(&pid, argv[0], NULL, NULL, argv, environ);
+		if (err) {
+			die("slock: failed to execute post-lock command: %s: %s\n",
+			    argv[0], strerror(err));
 		}
 	}
 
